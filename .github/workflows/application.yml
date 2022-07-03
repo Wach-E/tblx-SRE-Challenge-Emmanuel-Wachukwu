@@ -1,12 +1,14 @@
-# This is a basic workflow to test and push python application to dockerhub
+# CI/CD Pipeline for Task 3
 
-name: Application - Test and package to docker
+name: Daimler-Truck WebApp CI/CD
 
 # Controls when the workflow will run.
 on:
   # Triggers the workflow on push events only for the main branch.
   push:
-    branches: [main]
+    branches: [develop]
+  pull_request:
+    branches: [develop]
 
 jobs:
   test:
