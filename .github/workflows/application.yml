@@ -89,7 +89,7 @@ jobs:
 
           # Install Kubectl
           cd setup_environment
-          ./kubectl-setup.sh
+          sudo ./kubectl-setup.sh
 
           # Deploy EKS cluster with IaC
           cd ../terraform-kubernetes(EKS)

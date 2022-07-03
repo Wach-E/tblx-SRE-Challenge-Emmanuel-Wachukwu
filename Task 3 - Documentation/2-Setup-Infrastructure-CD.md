@@ -47,7 +47,7 @@ env:
   EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
 ```
 Add the following to the secrets:
-- AWS_ROLE_ARN: role to assume by Github, `arn:aws:iam::<your-account-id>:oidc-provider/token.actions.githubusercontent.com`.
+- AWS_ROLE_ARN: role to assume by Github, `arn:aws:iam::<your-account-id>:role/tblx-github-role`.
 - EKS_CLUSTER_NAME: name of eks cluster. `tblx-challenge-sre`
 
 Setup the deployment job by adding the following
