@@ -75,7 +75,7 @@ deploy_eks_infrastructure:
           ./kubectl-setup.sh
 
           # Deploy EKS cluster with IaC
-          cd ../terraform-kubernetes(EKS)
+          cd ../"terraform-kubernetes(EKS)"
           terraform init -input=false
           terraform apply --auto-approve
 
