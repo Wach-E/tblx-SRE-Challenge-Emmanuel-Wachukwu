@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Emmanuel- SRE Challenge</title>
+        <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+        <script  type="text/javascript" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+        <link href="https://fonts.googleapis.com/css?family=Zilla+Slab|Crimson+Text|Fjalla+One" rel="stylesheet">
+        <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    </head>
+    <body>
+        
+        <div class="page">
+            <div class="main-title">
+                <div>Wachukwu Emmanuel</div>
+                <div>SRE Challenge for tb.lx</div>
+            </div>
+        
+            <div class="container">
+                <div id="result" class="text-center"><h3>Mediawiki API word count for Daimler_Truck:<h3></div>
+                <div id="result" class="text-center"><b>{{ word_list }}</b></div>
+            </div>
+        </div>
+    </body>
+</html>

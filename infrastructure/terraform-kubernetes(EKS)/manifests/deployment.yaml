@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: daimler-truck
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: daimler
+  namespace: daimler-truck
+  labels:
+    app: daimler
+    tier: api
+spec:
+  selector:
+    matchLabels:
+      app: daimler-api
+  replicas: 2
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: daimler-api
+    spec:
+      containers:
+        - name: api
+          image: wache/sre-tblx:70d31b7
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 2560m
+              memory: 512Mi
+          ports:
+            - containerPort: 8000
+              name: api-port
+      restartPolicy: Always

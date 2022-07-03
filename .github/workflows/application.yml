@@ -1,0 +1,54 @@
+# This is a basic workflow to test and push python application to dockerhub
+
+name: Application - Test and package to docker
+
+# Controls when the workflow will run.
+on:
+  # Triggers the workflow on push events only for the main branch.
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    ## Configure the operating system the workflow should run on.
+    runs-on: ubuntu-20.04
+    ## Define a sequence of steps to be executed
+    steps:
+      ## Use the public `checkout` action  in version v2
+      ## to checkout the existing code in the repository
+      - uses: actions/checkout@v2
+        ## Use the public `setup-python` actoin  in version v2
+        ## to install python on the Ubuntu based environment.
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      ## Install all necessary dependecies within the requirements.txt file.
+      - name: Install dependencies
+        run: |
+          cd app
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      ## Run all pytests by inovking the `pytest command`
+      - name: Test with pytest
+        run: |
+          pytest
+
+  build_deploy:
+    needs: test
+    runs-on: ubuntu-20.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: Build and push
+        id: docker-build
+        env:
+          USER: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          cd app
+          export IMAGE_TAG=$(git rev-parse --short HEAD)
+          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+
+          docker build --platform linux/amd64 -t sre-tblx .
+          docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}
+          docker push ${USER}/sre-tblx:${IMAGE_TAG}

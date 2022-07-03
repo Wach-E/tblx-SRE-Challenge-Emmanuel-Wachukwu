@@ -1,0 +1,6 @@
+flask==2.1.2
+python-dotenv
+requests
+html2text
+pytest
+werkzeug==2.1.2
