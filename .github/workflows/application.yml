@@ -10,6 +10,17 @@ on:
   pull_request:
     branches: [develop]
 
+permissions:
+  # Allow the OIDC JWT ID token to be requested
+  id-token: write
+  # Allow OIDC use the “checkout” action
+  contents: read
+
+env:
+  AWS_REGION: us-west-1
+  ASSUME_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+  EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
+
 jobs:
   test:
     ## Configure the operating system the workflow should run on.
@@ -37,8 +48,10 @@ jobs:
           pytest
 
   build_deploy:
-    needs: test
+    needs: [test]
     runs-on: ubuntu-20.04
+    outputs:
+      IMAGE_TAG: ${{ steps.docker-build.outputs.image-tag }}
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -54,3 +67,43 @@ jobs:
           docker build --platform linux/amd64 -t sre-tblx .
           docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}
           docker push ${USER}/sre-tblx:${IMAGE_TAG}
+          echo "::set-output name=image-tag::$IMAGE_TAG"
+
+  deploy_eks_infrastructure:
+    needs: [build_deploy]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check Out
+        uses: actions/checkout@v2
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.ASSUME_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Deploy EKS Cluster
+        id: deploy-eks
+        env:
+          new-tag: ${{ needs.build_deploy.outputs.IMAGE_TAG }}
+        run: |
+          cd infrastructure/
+
+          # Install Kubectl
+          cd setup_environment
+          ./kubectl-setup.sh
+
+          # Deploy EKS cluster with IaC
+          cd ../terraform-kubernetes(EKS)
+          terraform init -input=false
+          terraform apply --auto-approve
+
+          # Obtain kube config from cluster
+          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+          # Deploy manifests files
+          cd manifests
+
+          # Change the image tag in the deployment.yaml
+          # export new_tag=$new-tag
+          # sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$new_tag/g" deployment.yaml
+
+          kubectl apply -f .

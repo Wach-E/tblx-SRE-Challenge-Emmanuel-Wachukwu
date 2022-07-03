@@ -148,6 +148,8 @@ jobs:
   build_deploy:
     needs: test
     runs-on: ubuntu-20.04
+    outputs:
+      IMAGE_TAG: ${{ steps.docker-build.outputs.image-tag }}
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -155,14 +157,16 @@ jobs:
         id: docker-build
         env:
           USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          PWD: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: |
           cd app
           export IMAGE_TAG=$(git rev-parse --short HEAD)
-          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          echo "$PWD" | docker login -u $USER --password-stdin
 
           docker build --platform linux/amd64 -t sre-tblx .
           docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}
           docker push ${USER}/sre-tblx:${IMAGE_TAG}
+          echo "::set-output name=image-tag::$IMAGE_TAG"
 ```
 
 This process successfully test, builds and deploys the daimler web application to Docker. In the next documentation,for this task, the infrastructure deployment will be added
