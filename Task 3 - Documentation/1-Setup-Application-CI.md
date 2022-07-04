@@ -74,7 +74,7 @@ Next, add the build_deploy job:
         run: |
           cd app
           export IMAGE_TAG=$(git rev-parse --short HEAD)
-          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u $USER --password-stdin
+          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${USER} --password-stdin
 
           docker build --platform linux/amd64 -t sre-tblx .
           docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}
@@ -85,20 +85,19 @@ The parameter `env` is used to add environmental variables. There `env` paramete
 - pipeline environment variable: variables that will be used in different jobs within the pipeline.
 - job environment variable: variables that can be used within a job.
 - step environment variable: variables that will be used in several actions within the steps.
-For this case, we will be using the action environment variable. The `Build ad push` action contains the user and password variables which hold the data in `DOCKERHUB_USERNAME` and `DOCKERHUB_PASSWORD` secrets. To add secrets to your repository:
+For this case, we will be using the step environment variable. The `Build ad push` action contains the user variables which hold the data in `DOCKERHUB_USERNAME` secrets. To add secrets to your repository:
 - Navigate to the repository `Settings`.
 - On the left pane, select Secret >> Action.
 - Click `New repository secret`.
 - Give the secret a name, `DOCKERHUB_USERNAME` and enter your dockerhub username as the value.
 - Click `Add secret` button.
-- Repeat the above steps for `DOCKERHUB_PASSWORD`.
 
 
 Now we know what the contents are for, here is what this job does:
 - Checkout of the repository on the develop branch.
 - Navigate to the app directory.
-- Create an IMAGE_TAG environment variable from the short version of the latest git commit (7 digits hash).
-- Login to docker using `USER` and `PWD` step environment variables.
+- Create an IMAGE_TAG environment variable from the short version of the latest git commit (7 digits hash)
+- Login to docker
 - Build a docker image from the current context for linux/amd64 platform and tag it `sre-tblx`.
 - Tag the built image with the docker hub user to create a repository and append the image tag.
 - Deploy the docker image to the docker repository.
@@ -136,7 +135,7 @@ jobs:
           pytest
 
   build_deploy:
-    needs: test
+    needs: [test]
     runs-on: ubuntu-20.04
     steps:
       - name: checkout

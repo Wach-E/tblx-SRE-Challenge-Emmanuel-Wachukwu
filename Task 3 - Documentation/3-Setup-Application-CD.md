@@ -1,27 +1,42 @@
 In part of the task, the focus was on deploying the kubernetes manifest file using a pipeline job.
 
-1. Tthe authentication for this job would be the user created in task-1 during the environment setup for awscli.The following are added to the repository secret:
-AWS_ACCESS_KEY_ID: user access id
-AWS_SECRET_ACCESS_KEY: user secret acces key.
+1. Kubectl requires a user to be able to make calls to the API server. For this, the `tblx-github-role` needs to be updated with the user. The user has to be there to provide short-lived tokens using AWS STS, so GitHub actions can assume that role. To satisfy this, the Trusted entity policy of the role must be edited to account for the user with `sts:TagSession` and `sts:AssumeRole` permissions. 
+On the AWS Management console:
+    - In the Trusted relationship of the role, edit the Trusted entity policy by adding the following statement:
+    ```
+            {
+                "Sid": "",
+                "Effect": "Allow",
+                "Principal": {
+                    "AWS": "arn:aws:iam::</account-id>:user/terraform_username"
+                },
+                "Action": [
+                    "sts:AssumeRole",
+                    "sts:TagSession"
+                ]
+            }
+    ```
+    - In the authentication user, add an inline IAM Policy as the JSON format:
+    ```
+    {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "",
+                "Effect": "Allow",
+                "Action": [
+                    "sts:AssumeRole",
+                    "sts:TagSession"
+                ],
+                "Resource": [
+                    "arn:aws:iam::</account-id>:role/tblx-github-role"
+                ]
+            }
+        ]
+    }
+    ```
 
-2. A pipeline environment variable is created with the two secrets
-env:
-  `...`
-  ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-
-3. By default, Github actions required that an IAM user is configured to th server prior to using kubectl commannd. Trying to configure the user made from task one won't work as it requires sts:Tagsession. To solve this, a solution would be to a configure the sts:TagSession and log in using the normal access and secret key. Here is a solution to [this](https://stackoverflow.com/questions/69883862/not-authorized-to-perform-ststagsession-on-resource)
-
-4. In the pipeline, configure the user login to AWS by adding the below to the `deploy_eks_infrastructure` job:
-```
-      - name: Configure AWS Credentials for deployment
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ env.ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-```
-5. Add a the step to apply the deploy the manifest files to the kubernetes cluster:
+2. Add a the step to apply the manifest files to the kubernetes cluster:
 ```
       - name: Apply new deployment manifest
         run: |
@@ -55,8 +70,6 @@ env:
   AWS_REGION: us-west-1
   ASSUME_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
   EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
-  ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
   test:
@@ -77,7 +90,7 @@ jobs:
           pytest
 
   build_deploy:
-    needs: test
+    needs: [test]
     runs-on: ubuntu-20.04
     steps:
       - name: checkout
@@ -101,8 +114,6 @@ jobs:
     steps:
       - name: Check Out
         uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.PAT }}
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -122,12 +133,6 @@ jobs:
 
           # Obtain kube config from cluster
           aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
-      - name: Configure AWS Credentials for deployment
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ env.ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
       - name: Apply new deployment manifest
         run: |
           cd infrastructure/"terraform-kubernetes(EKS)"/manifests
@@ -137,6 +142,12 @@ jobs:
 
 ```
 
-Now, the application is ready for deployment. Adding to stage, commiting changes and pushing to git will trigger the pipeline but it will only deploy the specifications show within the manifests files to the kubernetes cluster while the latest version of the application goes to dockerhub. Here are my thoughts on my selected approaches:
-- Best practise for kubernetes CD suggest that the latest tag should be used in production which is why I purposely added a tag as opposed to latest.
-- Specialized tools such as agrocd are best used for CD to kubernetes clusters.
+Now, the application is ready for deployment. Adding to stage, commiting changes and pushing to git will trigger the pipeline and deploy the specifications within the manifests files to the kubernetes cluster.
+**Ingress enpoint**: `http://a3f22e1a582ec4c2b874e93012765739-1216251317.us-west-1.elb.amazonaws.com`
+**route path**: `/api/v1/daimler_truck`
+
+**Complete url**: `http://a3f22e1a582ec4c2b874e93012765739-1216251317.us-west-1.elb.amazonaws.com/api/v1/daimler_truck`
+
+The latest version of the application goes to dockerhub and can be rolled out separated by modifying the manifest files. Here are my thoughts on my selected approaches:
+- Best practise for kubernetes CD suggest that the latest tag should not be used in production which is why I purposely added a tag as opposed to leaving the tag empty for latest image pulling. The reason for this is because latest doesn't give easy visibilty for root cause analysis of issues.
+- Specialized tools such as agrocd are best used for CD to kubernetes clusters and could be implemented with helm charts.
