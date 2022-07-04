@@ -119,6 +119,7 @@ jobs:
           # Install Kubectl
           cd infrastructure/setup_environment
           ./kubectl-setup.sh
+          mkdir ~/.kube; touch config
           echo $config > ~/.kube/config
 
           # Deploy manifests files
