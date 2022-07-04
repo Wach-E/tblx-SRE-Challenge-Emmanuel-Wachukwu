@@ -114,6 +114,7 @@ jobs:
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
           branch: develop
+          push_options: "--force"
           commit_message: "Updated deployment with latest Docker image"
           commit_user_name: Wach-E
           commit_user_email: immacurte1@gmail.com
