@@ -65,7 +65,7 @@ Next, add the build_deploy job:
     needs: test
     runs-on: ubuntu-20.04
     outputs:
-      IMAGE_TAG: ${{ steps.docker-build.outputs.image-tag }}
+      imagetag: ${{ steps.docker-build.outputs.IMAGE_TAG }}
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -110,8 +110,8 @@ Now we know what the contents are for, here is what this job does:
 - Build a docker image from the current context for linux/amd64 platform and tag it `sre-tblx`.
 - Tag the built image with the docker hub user to create a repository and append the image tag.
 - Deploy the docker image to the docker repository.
-- Create an step output called `image-tag`.
-N/B: the **image-tag** output from the `Build and push` step is sustituted as the `build_deploy` job output, **IMAGE_TAG**.
+- Create an step output called `imagetag`.
+N/B: the **image-tag** output from the `Build and push` step is sustituted as the `build_deploy` job output, **imagetag**.
 
 Here is the full complete pipeline:
 
@@ -149,7 +149,7 @@ jobs:
     needs: test
     runs-on: ubuntu-20.04
     outputs:
-      IMAGE_TAG: ${{ steps.docker-build.outputs.image-tag }}
+      imagetag: ${{ steps.docker-build.outputs.image-tag }}
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -161,7 +161,7 @@ jobs:
         run: |
           cd app
           export IMAGE_TAG=$(git rev-parse --short HEAD)
-          echo "$PWD" | docker login -u $USER --password-stdin
+          echo "${PWD}" | docker login -u ${USER} --password-stdin
 
           docker build --platform linux/amd64 -t sre-tblx .
           docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}

@@ -25,35 +25,27 @@ env:
 
 jobs:
   test:
-    ## Configure the operating system the workflow should run on.
     runs-on: ubuntu-20.04
-    ## Define a sequence of steps to be executed
     steps:
-      ## Use the public `checkout` action  in version v2
-      ## to checkout the existing code in the repository
       - uses: actions/checkout@v2
-        ## Use the public `setup-python` actoin  in version v2
-        ## to install python on the Ubuntu based environment.
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-      ## Install all necessary dependecies within the requirements.txt file.
       - name: Install dependencies
         run: |
           cd app
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      ## Run all pytests by inovking the `pytest command`
       - name: Test with pytest
         run: |
           pytest
 
   build_deploy:
-    needs: [test]
+    needs: test
     runs-on: ubuntu-20.04
     outputs:
-      IMAGE_TAG: ${{ steps.docker-build.outputs.image-tag }}
+      imagetag: ${{ steps.docker-build.outputs.image-tag }}
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -61,10 +53,11 @@ jobs:
         id: docker-build
         env:
           USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          PWD: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: |
           cd app
           export IMAGE_TAG=$(git rev-parse --short HEAD)
-          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          echo "${PWD}" | docker login -u ${USER} --password-stdin
 
           docker build --platform linux/amd64 -t sre-tblx .
           docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}
@@ -86,8 +79,6 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Deploy EKS Cluster
         id: deploy-eks
-        env:
-          new-tag: ${{ needs.build_deploy.outputs.IMAGE_TAG }}
         run: |
           # Install kubectl
           cd infrastructure/setup_environment
@@ -107,11 +98,13 @@ jobs:
           aws-secret-access-key: ${{ env.SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
       - name: Modify deployment image tag
+        env:
+          newtag: ${{ needs.build_deploy.outputs.imagetag }}
         run: |
           cd infrastructure/"terraform-kubernetes(EKS)"/manifests
 
           # Change the image tag in the deployment.yaml
-          export newtag=$new-tag
+          export newtag=${newtag}
           sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$newtag/g" deployment.yaml
       - uses: stefanzweifel/git-auto-commit-action@v4
         with:
@@ -122,5 +115,7 @@ jobs:
           commit_author: Wachukwu Emmanuel
       - name: Apply new deployment manifest
         run: |
-          kubectl apply -f .; sleep 60
+          cd infrastructure/"terraform-kubernetes(EKS)"/manifests
+          kubectl apply -f .
+          sleep 60
           kubectl get ing -n daimler-truck

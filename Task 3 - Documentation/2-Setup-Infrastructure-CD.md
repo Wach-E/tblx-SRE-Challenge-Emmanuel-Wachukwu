@@ -73,18 +73,12 @@ Setup the deployment job by adding the following
            cd infrastructure/"terraform-kubernetes(EKS)"
            terraform init -input=false
            terraform apply --auto-approve
- 
-           # Obtain kube config from cluster
-           export kubeconfig=$(aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }})
-           echo "::set-output name=kube-config::$kubeconfig"
 ```
 Here is what this job does:
 - Checkout of the repository on the develop branch.
 - Navigate to the infrastructure directory.
 - Navigate to the setup_environment directory and install Kubectl using `kubectl-setup.sh`
 - Navigate to the terraform-kubernetes(EKS) directory and deploy EKS Cluster using terraform.
-- Obtain EKS cluster kubeconfig and configure the kubectl.
-- Navigate to the manifest file directory and deploy kubernetes manifest files.
 
 The complete `application.yml` looks like this:
 ```
@@ -138,10 +132,10 @@ jobs:
           pytest
 
   build_deploy:
-    needs: [test]
+    needs: test
     runs-on: ubuntu-20.04
     outputs:
-      IMAGE_TAG: ${{ steps.docker-build.outputs.image-tag }}
+      imagetag: ${{ steps.docker-build.outputs.image-tag }}
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -149,10 +143,11 @@ jobs:
         id: docker-build
         env:
           USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          PWD: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: |
           cd app
           export IMAGE_TAG=$(git rev-parse --short HEAD)
-          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          echo "${PWD}" | docker login -u ${USER} --password-stdin
 
           docker build --platform linux/amd64 -t sre-tblx .
           docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}
@@ -162,8 +157,6 @@ jobs:
    deploy_eks_infrastructure:
      needs: [build_deploy]
      runs-on: ubuntu-20.04
-     outputs:
-      kubeconfig: ${{ steps.deploy-eks.outputs.kube-config }}
      steps:
        - name: Check Out
          uses: actions/checkout@v2
@@ -179,10 +172,6 @@ jobs:
            cd infrastructure/"terraform-kubernetes(EKS)"
            terraform init -input=false
            terraform apply --auto-approve
- 
-           # Obtain kube config from cluster
-           export kubeconfig=$(aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }})
-           echo "::set-output name=kube-config::$kubeconfig"
 
 ```
 
