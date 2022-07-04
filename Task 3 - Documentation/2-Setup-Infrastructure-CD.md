@@ -123,7 +123,7 @@ jobs:
           pytest
 
   build_deploy:
-    needs: test
+    needs: [test]
     runs-on: ubuntu-20.04
     steps:
       - name: checkout
