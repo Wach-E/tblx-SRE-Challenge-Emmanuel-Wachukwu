@@ -1,0 +1,24 @@
+# Ignore media-wiki virtual environment
+app/media-wiki/
+app/.env
+app/__pycache__/
+daimler*.txt
+*.log
+
+infrastructure/setup_environment/awscliv2.zip
+infrastructure/setup_environment/aws
+
+# Terraform backend remote state
+infrastructure/backend-config/.terraform
+infrastructure/backend-config/*.tfstate
+infrastructure/backend-config/*.tfstate.*
+infrastructure/backend-config/.terraform.lock.hcl
+
+infrastructure/terraform-kubernetes(EKS)/.terraform
+infrastructure/terraform-kubernetes(EKS)/.terraform.lock.hcl
+infrastructure/terraform-kubernetes(EKS)/*.tfstate
+infrastructure/terraform-kubernetes(EKS)/*.tfstate.*
+
+infrastructure/setup_environment/get_helm.sh
+infrastructure/setup_environment/kubectl
+infrastructure/setup_environment/kubectl.sha256

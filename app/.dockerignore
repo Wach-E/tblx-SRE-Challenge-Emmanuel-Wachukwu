@@ -1,0 +1,6 @@
+__pycache__/
+Dockerfile
+*.log
+daimler-*.txt
+media-wiki/*
+test_daimler_word_list.py
