@@ -104,14 +104,20 @@ jobs:
           aws-access-key-id: ${{ env.ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-      - name: Deploy manifest files
+      - name: Modify deployment image tag
         run: |
-          # Deploy Kubernetes manifests
           cd infrastructure/"terraform-kubernetes(EKS)"/manifests
 
           # Change the image tag in the deployment.yaml
-          # export newtag=$new-tag
-          # sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$newtag/g" deployment.yaml
-
-          kubectl apply -f .; sleep 60 
+          export newtag=$new-tag
+          sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$newtag/g" deployment.yaml
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Updated deployment with latest Docker image"
+          commit_user_name: Wach-E
+          commit_user_email: immacurte1@gmail.com
+          commit_author: Wachukwu Emmanuel
+      - name: Apply new deployment manifest
+        run: |
+          kubectl apply -f .; sleep 60
           kubectl get ing -n daimler-truck
