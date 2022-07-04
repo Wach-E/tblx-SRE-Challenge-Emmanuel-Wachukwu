@@ -57,7 +57,7 @@ jobs:
         run: |
           cd app
           export IMAGE_TAG=$(git rev-parse --short HEAD)
-          echo "${PWD}" | docker login -u ${USER} --password-stdin
+          echo ${PWD} | docker login -u ${USER} --password-stdin
 
           docker build --platform linux/amd64 -t sre-tblx .
           docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}
