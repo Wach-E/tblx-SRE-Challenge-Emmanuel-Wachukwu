@@ -10,4 +10,133 @@ env:
   ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
   SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
-3. By default, Github actions required that an IAM user is configured to th server prior to using kubectl commannd. Trying to configure the user made from task one won't work as it requires sts:Tags
+3. By default, Github actions required that an IAM user is configured to th server prior to using kubectl commannd. Trying to configure the user made from task one won't work as it requires sts:Tagsession. To solve this, a solution would be to a configure the sts:TagSession and log in using the normal access and secret key. Here is a solution to [this](https://stackoverflow.com/questions/69883862/not-authorized-to-perform-ststagsession-on-resource)
+
+4. In the pipeline, configure the user login to AWS by adding the below to the `deploy_eks_infrastructure` job:
+```
+      - name: Configure AWS Credentials for deployment
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ env.ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+```
+5. Add a the step to apply the deploy the manifest files to the kubernetes cluster:
+```
+      - name: Apply new deployment manifest
+        run: |
+          cd infrastructure/"terraform-kubernetes(EKS)"/manifests
+          kubectl apply -f .
+          sleep 60
+          kubectl get ing -n daimler-truck
+```
+
+Now, the complete pipeline should look like this:
+```
+# CI/CD Pipeline for Task 3
+
+name: Daimler-Truck WebApp CI/CD
+
+# Controls when the workflow will run.
+on:
+  # Triggers the workflow on push events only for the main branch.
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [develop]
+
+permissions:
+  # Allow the OIDC JWT ID token to be requested
+  id-token: write
+  # Allow OIDC use the “checkout” action
+  contents: read
+
+env:
+  AWS_REGION: us-west-1
+  ASSUME_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+  EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
+  ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      - name: Install dependencies
+        run: |
+          cd app
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Test with pytest
+        run: |
+          pytest
+
+  build_deploy:
+    needs: test
+    runs-on: ubuntu-20.04
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+      - name: Build and push
+        id: docker-build
+        env:
+          USER: ${{ secrets.DOCKERHUB_USERNAME }}
+        run: |
+          cd app
+          export IMAGE_TAG=$(git rev-parse --short HEAD)
+          echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${USER} --password-stdin
+
+          docker build --platform linux/amd64 -t sre-tblx .
+          docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}
+          docker push ${USER}/sre-tblx:${IMAGE_TAG}
+
+  deploy_eks_infrastructure:
+    needs: [build_deploy]
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Check Out
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.PAT }}
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{ env.ASSUME_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Deploy EKS Cluster
+        id: deploy-eks
+        run: |
+          # Install kubectl
+          cd infrastructure/setup_environment
+          ./kubectl-setup.sh
+
+          # Deploy EKS cluster with IaC
+          cd ../"terraform-kubernetes(EKS)"
+          terraform init -input=false
+          terraform apply --auto-approve
+
+          # Obtain kube config from cluster
+          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+      - name: Configure AWS Credentials for deployment
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ env.ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Apply new deployment manifest
+        run: |
+          cd infrastructure/"terraform-kubernetes(EKS)"/manifests
+          kubectl apply -f .
+          sleep 60
+          kubectl get ing -n daimler-truck
+
+```
+
+Now, the application is ready for deployment. Adding to stage, commiting changes and pushing to git will trigger the pipeline but it will only deploy the specifications show within the manifests files to the kubernetes cluster while the latest version of the application goes to dockerhub. Here are my thoughts on my selected approaches:
+- Best practise for kubernetes CD suggest that the latest tag should be used in production which is why I purposely added a tag as opposed to latest.
+- Specialized tools such as agrocd are best used for CD to kubernetes clusters.
