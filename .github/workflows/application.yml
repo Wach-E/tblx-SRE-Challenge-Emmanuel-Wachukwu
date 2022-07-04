@@ -69,8 +69,6 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ env.ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ env.SECRET_ACCESS_KEY }}
           role-to-assume: ${{ env.ASSUME_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - name: Deploy EKS Cluster
@@ -87,12 +85,12 @@ jobs:
 
           # Obtain kube config from cluster
           aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
-      # - name: Configure AWS Credentials for deployment
-      #   uses: aws-actions/configure-aws-credentials@v1
-      #   with:
-      #     aws-access-key-id: ${{ env.ACCESS_KEY_ID }}
-      #     aws-secret-access-key: ${{ env.SECRET_ACCESS_KEY }}
-      #     aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS Credentials for deployment
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ env.ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ env.SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
       - name: Apply new deployment manifest
         run: |
           cd infrastructure/"terraform-kubernetes(EKS)"/manifests
