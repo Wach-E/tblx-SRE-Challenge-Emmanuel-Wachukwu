@@ -1,0 +1,11 @@
+In part of the task, the focus was on deploying the kubernetes manifest file using a pipeline job.
+
+1. Tthe authentication for this job would be the user created in task-1 during the environment setup for awscli.The following are added to the repository secret:
+AWS_ACCESS_KEY_ID: user access id
+AWS_SECRET_ACCESS_KEY: user secret acces key.
+
+2. A pipeline environment variable is created with the two secrets
+env:
+  `...`
+  ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
