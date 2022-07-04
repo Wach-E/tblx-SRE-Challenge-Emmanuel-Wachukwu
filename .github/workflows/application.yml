@@ -107,7 +107,7 @@ jobs:
       - name: Deploy manifest files
         run: |
           # Deploy Kubernetes manifests
-          cd infrastructure/"terraform-kubernetes(EKS)/manifests
+          cd infrastructure/"terraform-kubernetes(EKS)"/manifests
 
           # Change the image tag in the deployment.yaml
           # export newtag=$new-tag
