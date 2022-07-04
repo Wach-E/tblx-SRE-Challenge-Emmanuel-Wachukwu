@@ -64,8 +64,6 @@ Next, add the build_deploy job:
   build_deploy:
     needs: test
     runs-on: ubuntu-20.04
-    outputs:
-      imagetag: ${{ steps.docker-build.outputs.IMAGE_TAG }}
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -81,7 +79,6 @@ Next, add the build_deploy job:
           docker build --platform linux/amd64 -t sre-tblx .
           docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}
           docker push ${USER}/sre-tblx:${IMAGE_TAG}
-          echo "::set-output name=image-tag::$IMAGE_TAG"
 
 ```
 The parameter `env` is used to add environmental variables. There `env` parameter can exist as:
@@ -96,10 +93,6 @@ For this case, we will be using the action environment variable. The `Build ad p
 - Click `Add secret` button.
 - Repeat the above steps for `DOCKERHUB_PASSWORD`.
 
-Some new terms were added to this job; `outputs`, `id` and `::set-output name=image-tag::$IMAGE_TAG`. Here's what they do:
-- outputs: this is a job level parameter that specifies the output from a job of which can be used in any job that depends on it.
-- id: this is a step level parameter that identifies an action. It is useful when setting the output of a step to be used by another step.
-- "::set-output name=output_name::output_value": this is used to export a step output by specifying its name and value. The output is imported by another step using `${{steps.step_id.outputs.output_name}}`.
 
 Now we know what the contents are for, here is what this job does:
 - Checkout of the repository on the develop branch.
@@ -109,8 +102,6 @@ Now we know what the contents are for, here is what this job does:
 - Build a docker image from the current context for linux/amd64 platform and tag it `sre-tblx`.
 - Tag the built image with the docker hub user to create a repository and append the image tag.
 - Deploy the docker image to the docker repository.
-- Create an step output called `imagetag`.
-N/B: the **image-tag** output from the `Build and push` step is sustituted as the `build_deploy` job output, **imagetag**.
 
 Here is the full complete pipeline:
 
@@ -147,8 +138,6 @@ jobs:
   build_deploy:
     needs: test
     runs-on: ubuntu-20.04
-    outputs:
-      imagetag: ${{ steps.docker-build.outputs.image-tag }}
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -164,7 +153,6 @@ jobs:
           docker build --platform linux/amd64 -t sre-tblx .
           docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}
           docker push ${USER}/sre-tblx:${IMAGE_TAG}
-          echo "::set-output name=image-tag::$IMAGE_TAG"
 ```
 
 This process successfully test, builds and deploys the daimler web application to Docker. In the next documentation,for this task, the infrastructure deployment will be added

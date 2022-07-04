@@ -56,8 +56,6 @@ Setup the deployment job by adding the following
  deploy_eks_infrastructure:
      needs: [build_deploy]
      runs-on: ubuntu-20.04
-     outputs:
-      kubeconfig: ${{ steps.deploy-eks.outputs.kube-config }}
      steps:
        - name: Check Out
          uses: actions/checkout@v2
@@ -76,9 +74,7 @@ Setup the deployment job by adding the following
 ```
 Here is what this job does:
 - Checkout of the repository on the develop branch.
-- Navigate to the infrastructure directory.
-- Navigate to the setup_environment directory and install Kubectl using `kubectl-setup.sh`
-- Navigate to the terraform-kubernetes(EKS) directory and deploy EKS Cluster using terraform.
+- Navigate to the infrastructure/terraform-kubernetes(EKS) directory and deploy EKS Cluster using terraform.
 
 The complete `application.yml` looks like this:
 ```
@@ -107,12 +103,9 @@ env:
 
 jobs:
   test:
-    ## Configure the operating system the workflow should run on.
     runs-on: ubuntu-20.04
     ## Define a sequence of steps to be executed
     steps:
-      ## Use the public `checkout` action  in version v2
-      ## to checkout the existing code in the repository
       - uses: actions/checkout@v2
         ## Use the public `setup-python` actoin  in version v2
         ## to install python on the Ubuntu based environment.
@@ -120,13 +113,11 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: 3.8
-      ## Install all necessary dependecies within the requirements.txt file.
       - name: Install dependencies
         run: |
           cd app
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      ## Run all pytests by inovking the `pytest command`
       - name: Test with pytest
         run: |
           pytest
@@ -134,8 +125,6 @@ jobs:
   build_deploy:
     needs: test
     runs-on: ubuntu-20.04
-    outputs:
-      imagetag: ${{ steps.docker-build.outputs.image-tag }}
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -151,7 +140,6 @@ jobs:
           docker build --platform linux/amd64 -t sre-tblx .
           docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}
           docker push ${USER}/sre-tblx:${IMAGE_TAG}
-          echo "::set-output name=image-tag::$IMAGE_TAG"
 
    deploy_eks_infrastructure:
      needs: [build_deploy]

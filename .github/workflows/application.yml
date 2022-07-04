@@ -44,8 +44,6 @@ jobs:
   build_deploy:
     needs: test
     runs-on: ubuntu-20.04
-    outputs:
-      imagetag: ${{ steps.docker-build.outputs.image-tag }}
     steps:
       - name: checkout
         uses: actions/checkout@v2
@@ -61,7 +59,6 @@ jobs:
           docker build --platform linux/amd64 -t sre-tblx .
           docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}
           docker push ${USER}/sre-tblx:${IMAGE_TAG}
-          echo "::set-output name=image-tag::$IMAGE_TAG"
 
   deploy_eks_infrastructure:
     needs: [build_deploy]
@@ -96,15 +93,6 @@ jobs:
           aws-access-key-id: ${{ env.ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
-      - name: Modify deployment image tag
-        env:
-          newtag: ${{ needs.build_deploy.outputs.imagetag }}
-        run: |
-          cd infrastructure/"terraform-kubernetes(EKS)"/manifests
-
-          # Change the image tag in the deployment.yaml
-          export tag=$(${newtag} | cut -c1-7)
-          sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$tag/g" deployment.yaml
       - name: Apply new deployment manifest
         run: |
           cd infrastructure/"terraform-kubernetes(EKS)"/manifests
