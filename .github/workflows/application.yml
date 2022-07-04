@@ -20,6 +20,8 @@ env:
   AWS_REGION: us-west-1
   ASSUME_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
   EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
+  # ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+  # SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 jobs:
   test:
@@ -72,40 +74,55 @@ jobs:
   deploy_eks_infrastructure:
     needs: [build_deploy]
     runs-on: ubuntu-20.04
+    outputs:
+      kubeconfig: ${{ steps.deploy-eks.outputs.kube-config }}
     steps:
       - name: Check Out
         uses: actions/checkout@v2
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           role-to-assume: ${{ env.ASSUME_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - name: Deploy EKS Cluster
         id: deploy-eks
-        env:
-          new-tag: ${{ needs.build_deploy.outputs.IMAGE_TAG }}
         run: |
-          cd infrastructure/
-
-          # Install Kubectl
-          cd setup_environment
-          ./kubectl-setup.sh
-
           # Deploy EKS cluster with IaC
-          cd ../"terraform-kubernetes(EKS)"
+          cd infrastructure/"terraform-kubernetes(EKS)"
           terraform init -input=false
           terraform apply --auto-approve
 
           # Obtain kube config from cluster
-          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+          export kubeconfig=$(aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }})
+          echo "::set-output name=kube-config::$kubeconfig"
 
-          # Deploy manifests files
-          cd manifests
+  # deploy_manifest_files:
+  #   needs: [deploy_eks_infrastructure]
+  #   runs-on: ubuntu-20.04
+  #   steps:
+  #     - name: Check Out
+  #       uses: actions/checkout@v2
+  #     - name: Configure AWS Credentials
+  #       uses: aws-actions/configure-aws-credentials@v1
+  #       with:
+  #         aws-access-key-id: ${{ env.ACCESS_KEY_ID }}
+  #         aws-secret-access-key: ${{ env.SECRET_ACCESS_KEY }}
+  #         aws-region: ${{ env.AWS_REGION }}
+  #     - name: Deploy Kubernetes manifests
+  #       id: deploy-manifest
+  #       env:
+  #         config: ${{ needs.deploy_eks_infrastructure.outputs.kubeconfig }}
+  #         new-tag: ${{ needs.build_deploy.outputs.IMAGE_TAG }}
+  #       run: |
+  #         # Install Kubectl
+  #         cd infrastructure/setup_environment
+  #         ./kubectl-setup.sh
 
-          # Change the image tag in the deployment.yaml
-          # export new_tag=$new-tag
-          # sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$new_tag/g" deployment.yaml
+  #         # Deploy manifests files
+  #         cd ../"terraform-kubernetes(EKS)"/manifests
 
-          kubectl apply -f .
+  #         # Change the image tag in the deployment.yaml
+  #         # export new_tag=$new-tag
+  #         # sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$new_tag/g" deployment.yaml
+
+  #         kubectl apply -f .

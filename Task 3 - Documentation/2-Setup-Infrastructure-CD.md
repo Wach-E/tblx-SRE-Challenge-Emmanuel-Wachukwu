@@ -53,45 +53,30 @@ Add the following to the secrets:
 Setup the deployment job by adding the following
 
 ```
-deploy_eks_infrastructure:
-    needs: [build_deploy]
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Check Out
-        uses: actions/checkout@v2
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          role-to-assume: ${{ env.ASSUME_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Deploy EKS Cluster
-        env:
-          new-tag: ${{ needs.build_deploy.outputs.IMAGE_TAG }}
-        run: |
-          cd infrastructure/
-
-          # Install Kubectl
-          cd setup_environment
-          ./kubectl-setup.sh
-
-          # Deploy EKS cluster with IaC
-          cd ../"terraform-kubernetes(EKS)"
-          terraform init -input=false
-          terraform apply --auto-approve
-
-          # Obtain kube config from cluster
-          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
-
-          # Deploy manifests files
-          cd manifests
-          
-          # Change the image tag in the deployment.yaml
-          # export new_tag=$new-tag
-          # sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$new_tag/g" deployment.yaml
-
-          kubectl apply -f .
+ deploy_eks_infrastructure:
+     needs: [build_deploy]
+     runs-on: ubuntu-20.04
+     outputs:
+      kubeconfig: ${{ steps.deploy-eks.outputs.kube-config }}
+     steps:
+       - name: Check Out
+         uses: actions/checkout@v2
+       - name: Configure AWS Credentials
+         uses: aws-actions/configure-aws-credentials@v1
+         with:
+           role-to-assume: ${{ env.ASSUME_ROLE_ARN }}
+           aws-region: ${{ env.AWS_REGION }}
+       - name: Deploy EKS Cluster
+         id: deploy-eks
+         run: |
+           # Deploy EKS cluster with IaC
+           cd infrastructure/"terraform-kubernetes(EKS)"
+           terraform init -input=false
+           terraform apply --auto-approve
+ 
+           # Obtain kube config from cluster
+           export kubeconfig=$(aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }})
+           echo "::set-output name=kube-config::$kubeconfig"
 ```
 Here is what this job does:
 - Checkout of the repository on the develop branch.
@@ -174,48 +159,32 @@ jobs:
           docker push ${USER}/sre-tblx:${IMAGE_TAG}
           echo "::set-output name=image-tag::$IMAGE_TAG"
 
-  deploy_eks_infrastructure:
-    needs: [build_deploy]
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Check Out
-        uses: actions/checkout@v2
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          role-to-assume: ${{ env.ASSUME_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Deploy EKS Cluster
-        id: deploy-eks
-        env:
-          new-tag: ${{ needs.build_deploy.outputs.IMAGE_TAG }}
-        run: |
-          cd infrastructure/
-
-          # Install Kubectl
-          cd setup_environment
-          ./kubectl-setup.sh
-
-          # Deploy EKS cluster with IaC
-          cd ../terraform-kubernetes(EKS)
-          terraform init -input=false
-          terraform apply --auto-approve
-
-          # Obtain kube config from cluster
-          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
-
-          # Deploy manifests files
-          cd manifests
-
-          # Change the image tag in the deployment.yaml
-          # export new_tag=$new-tag
-          # sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$new_tag/g" deployment.yaml
-
-          kubectl apply -f .
+   deploy_eks_infrastructure:
+     needs: [build_deploy]
+     runs-on: ubuntu-20.04
+     outputs:
+      kubeconfig: ${{ steps.deploy-eks.outputs.kube-config }}
+     steps:
+       - name: Check Out
+         uses: actions/checkout@v2
+       - name: Configure AWS Credentials
+         uses: aws-actions/configure-aws-credentials@v1
+         with:
+           role-to-assume: ${{ env.ASSUME_ROLE_ARN }}
+           aws-region: ${{ env.AWS_REGION }}
+       - name: Deploy EKS Cluster
+         id: deploy-eks
+         run: |
+           # Deploy EKS cluster with IaC
+           cd infrastructure/"terraform-kubernetes(EKS)"
+           terraform init -input=false
+           terraform apply --auto-approve
+ 
+           # Obtain kube config from cluster
+           export kubeconfig=$(aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }})
+           echo "::set-output name=kube-config::$kubeconfig"
 
 ```
 
-As the next step, this deployment.yaml file would need to change according to the docker image tag.
+As the next step, the kubernetes manifest files will need to be deployed to the cluster
           
