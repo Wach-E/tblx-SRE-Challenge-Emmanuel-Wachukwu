@@ -143,11 +143,10 @@ jobs:
         id: docker-build
         env:
           USER: ${{ secrets.DOCKERHUB_USERNAME }}
-          PWD: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: |
           cd app
           export IMAGE_TAG=$(git rev-parse --short HEAD)
-          echo "${PWD}" | docker login -u ${USER} --password-stdin
+          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u ${USER} --password-stdin
 
           docker build --platform linux/amd64 -t sre-tblx .
           docker tag sre-tblx ${USER}/sre-tblx:${IMAGE_TAG}

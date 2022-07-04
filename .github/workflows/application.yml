@@ -105,13 +105,6 @@ jobs:
           # Change the image tag in the deployment.yaml
           export newtag=${newtag}
           sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$newtag/g" deployment.yaml
-      - uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          branch: develop
-          commit_message: "Updated deployment with latest Docker image"
-          commit_user_name: Wach-E
-          commit_user_email: immacurte1@gmail.com
-          commit_author: Wachukwu Emmanuel
       - name: Apply new deployment manifest
         run: |
           cd infrastructure/"terraform-kubernetes(EKS)"/manifests
