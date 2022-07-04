@@ -148,6 +148,6 @@ Now, the application is ready for deployment. Adding to stage, commiting changes
 
 **Complete url**: `http://a3f22e1a582ec4c2b874e93012765739-1216251317.us-west-1.elb.amazonaws.com/api/v1/daimler_truck`
 
-while the latest version of the application goes to dockerhub. Here are my thoughts on my selected approaches:
-- Best practise for kubernetes CD suggest that the latest tag should be used in production which is why I purposely added a tag as opposed to latest.
-- Specialized tools such as agrocd are best used for CD to kubernetes clusters.
+The latest version of the application goes to dockerhub and can be rolled out separated by modifying the manifest files. Here are my thoughts on my selected approaches:
+- Best practise for kubernetes CD suggest that the latest tag should not be used in production which is why I purposely added a tag as opposed to leaving the tag empty for latest image pulling. The reason for this is because latest doesn't give easy visibilty for root cause analysis of issues.
+- Specialized tools such as agrocd are best used for CD to kubernetes clusters and could be implemented with helm charts.
