@@ -28,7 +28,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: wache/sre-tblx:9b29f47
+          image: wache/sre-tblx:67e7081
           resources:
             requests:
               cpu: 100m
