@@ -74,33 +74,6 @@ jobs:
   deploy_eks_infrastructure:
     needs: [build_deploy]
     runs-on: ubuntu-20.04
-    outputs:
-      kubeconfig: ${{ steps.deploy-eks.outputs.kube-config }}
-    steps:
-      - name: Check Out
-        uses: actions/checkout@v2
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          role-to-assume: ${{ env.ASSUME_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Deploy EKS Cluster
-        id: deploy-eks
-        run: |
-          # Deploy EKS cluster with IaC
-          cd infrastructure/"terraform-kubernetes(EKS)"
-          terraform init -input=false
-          terraform apply --auto-approve
-
-          # Obtain kube config from cluster
-          export kubeconfig=$(aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }})
-          echo "::set-output name=kube-config::$kubeconfig"
-
-  deploy_manifest_files:
-    needs:
-      - build_deploy
-      - deploy_eks_infrastructure
-    runs-on: ubuntu-20.04
     steps:
       - name: Check Out
         uses: actions/checkout@v2
@@ -109,25 +82,31 @@ jobs:
         with:
           aws-access-key-id: ${{ env.ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ env.SECRET_ACCESS_KEY }}
+          role-to-assume: ${{ env.ASSUME_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-      - name: Deploy Kubernetes manifests
-        id: deploy-manifest
+      - name: Deploy EKS Cluster
+        id: deploy-eks
         env:
-          config: ${{ needs.deploy_eks_infrastructure.outputs.kubeconfig }}
           new-tag: ${{ needs.build_deploy.outputs.IMAGE_TAG }}
         run: |
-          # Install Kubectl
+          # Install kubectl
           cd infrastructure/setup_environment
           ./kubectl-setup.sh
-          mkdir ~/.kube; touch config
-          echo $config > ~/.kube/config
 
-          # Deploy manifests files
-          cd ../"terraform-kubernetes(EKS)"/manifests
+          # Deploy EKS cluster with IaC
+          cd ../"terraform-kubernetes(EKS)"
+          terraform init -input=false
+          terraform apply --auto-approve
+
+          # Obtain kube config from cluster
+          aws eks update-kubeconfig --name ${{ env.EKS_CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+
+          # Deploy Kubernetes manifests
+          cd manifests
 
           # Change the image tag in the deployment.yaml
-          # export new_tag=$new-tag
-          # sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$new_tag/g" deployment.yaml
+          # export newtag=$new-tag
+          # sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$newtag/g" deployment.yaml
 
           kubectl apply -f .; sleep 60 
           kubectl get ing -n daimler-truck
