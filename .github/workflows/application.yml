@@ -104,7 +104,8 @@ jobs:
 
           # Change the image tag in the deployment.yaml
           export newtag=${newtag}
-          sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$newtag/g" deployment.yaml
+          export tag=${newtag:0:7}
+          sed -i -E "s/sre-tblx:([a-zA-]*)/sre-tblx:$tag/g" deployment.yaml
       - name: Apply new deployment manifest
         run: |
           cd infrastructure/"terraform-kubernetes(EKS)"/manifests
