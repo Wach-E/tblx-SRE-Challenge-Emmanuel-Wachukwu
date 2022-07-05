@@ -1,11 +1,12 @@
-## Setup virtual environment
+# Task 1 - Virtual environment setup
+
 To setup the virtualenv, the application repository needs to be cloned.
 1. Clone challenge github repository
 `git clone git@github.com:tblxio/tblx-challenge-sre-Emmanuel-Wachukwu.git`
 N/B: I used the ssh cloning method as it offers no manual token input once the public ssh key has been added to Github.
 2. Navigate to the cloned repo:
 `cd tblx-challenge-sre-Emmanuel-Wachukwu`
-3. For this project, I will be applying the **github feature (task-*) workflow develop** branching pattern:
+3. For this project, **github feature (task-*) workflow develop** branching pattern will be implemented:
 `git checkout -b develop`
 `git checkout -b task-1`
 4. Create a folder to hold the application files:
