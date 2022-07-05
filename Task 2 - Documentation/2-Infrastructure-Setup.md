@@ -1,23 +1,32 @@
-The infrastructure setup was created using majorly AWS VPC and EKS terraform modules as well as custom modules. To have this infrastructure setup, the following workflow was adopted:
-- Create a new directory for infrastructure, `infrastructure` to hold all the infrastructure files.
-- Setup remote backend using the configuration in `backend-config/` directory.
-- Deploy remote backend resources isolated from the EKS deployment.
-- Create the directory, `terraform-kubernetes(EKS)` to hold the IaC files for EKS deployment.
-- Setup VPC infrastructure for Worker nodes using AWS VPC module. For the purpose of EKS deployment, it is required that certain configurations must be set in the VPC as shown in the `main.tf` of the `terraform-kubernetes(EKS)` directory.
-- Setup EKS control plane using AWS EKS module configured for autoscaling worker nodes.
-- Configure local execution to update cluster kubeconfig and install nginx ingress controller (with kubectl) from the null resource.
-- Configure variables based on its usage (general, VPC, EKS, etc) as well as locals.
+# Task 2 - Infrastructure development
 
-On successful development of the infrastructure as code:
-- Install the required modules:
- `terraform init`
- - Check for expected deployments:
- `terraform plan`
- - Deploy the infrastructure using 
- `terraform apply --auto-approve`
-
-To access the kubernetes cluster from the terminal:
+The infrastructure developed majorly with AWS VPC and EKS terraform modules. The only custom module used, **null-resources** was for execution of commands within terraform. To develop and deploy this infrastructure, the following workflow was adopted:
+1. Navigate to **infrastructure** directory.
+2. Setup of remote backend: The remote backend is used tp staore the state of terraformm infrastructure. To setup the remote backend, the following was done:
+    - Create a new directory, **backend-config** to hold the resources for creating the remote backend. Its best practise to separate the backend configuration file deployment from the main infrastructure deployment to avoid accidentally deleting the remote backend state file before the destroying the infrastructure.
+    The contents of the **backend-config/** are **main.tf**, **providers.tf** and **outputs.tf**.
+    - On complete development of the remote backend configuration:
+        - Download required terraform modules: `terraform init`
+        - Check for desired deployment: `terraform plan`
+        - Deploy remote backend resources: `terraform apply`
+            Confirm application with `yes`.
+3. Navigate back to the **infrastructure** directory. Create a directory called **terraform-kubernetes(EKS)**. This directory will hold all the files needed for EKS deployment. Naviagte into **terraform-kubernetes(EKS)**:
+    - Setup all **.tf** files and modules required for EKS deployment:
+        - There are 3 variables files, **variables.tf**, **variables-vpc.tf** and **variables-eks.tf** which are used for the provider, VPC and EKS respectively.
+        - **outputs.tf**: the output of the eks cluster on successful deployment.
+        - **main.tf**: contains modular configuration for VPC, EKS and Nginx-Ingress deployment deployments.
+        - **local.tf**: local configurations used in **main.tf**.
+        - **data.tf**: configuration to query eks cluster and availability zones.
+        - **providers.tf**: configuration for terraform providers with integration of remote backend.
+    - Create the modules directory **modules/null_resources**
+        - Add the required configuration, for null_resource setup: **main.tf** and **variables.tf**
+    - Now the EKS infrastucture has been developed, its ready for deployment:
+        - Download required terraform modules: `terraform init`
+        - Check for desired deployment: `terraform plan`
+        - Deploy EKS cluster resources: `terraform apply`
+            Confirm application with `yes`
+4. To access the EKS cluster from the terminal:
 `aws eks update-kubeconfig --name tblx-challenge-sre --region us-west-1`
-The cluster kubeconfig file will be updated in ~/.kube/config which will give access to communication between `kubectl` and `EKS API server`
-Confirm nodes setup properly:
+The cluster kubeconfig file will be updated in `~/.kube/config`. This will grant `kubectl` permissions to communicate which the `EKS API server`
+5. Confirm worker nodes:
 `kubectl get nodes`

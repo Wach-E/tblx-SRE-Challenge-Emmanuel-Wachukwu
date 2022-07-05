@@ -1,22 +1,14 @@
-# Task 2
+# Task 2 - Setup Environment
 
-## Tool Setup:
-For the purpose of this task, I selected the following tools/platforms:
-- Infrastructure as Code Tool, Terraform:Terraform is a powerful and dynamic tool used for declarative infrastructure provisioning on public cloud providers. The simplicity of Hashicorp Configuration Language (HCL) makes scripting seamless.
-- Cloud, Amazon Web Services (AWs): AWS is a roust for its services and variety of integration. Outside its benchmark, it stands relatively as a viewpoint to other cloud providers like Azure and GCP.
-- Container technology: AWS Elastic Kubernetes Service (EKS) will be set up with Terraform. 
+For the purpose of this task, the following tools were additionally selected:
 - Helm: Helm is the `npm` for kubernetes and will be used to deploy microservices to the Kubernetes cluster.
-- Docker: This will be used as the container runtime and for other for ad-hoc processes.
+- Kubectl: Kubernetes client (cli) tool used to administer changes to the Kubernetes cluster. 
+- AWS cli: aws (client) for terminal cloud enginneering.
+- Terraform: IaC tool used for provisioning, modifyig and destroying cloud infrastructure.
 
-To setup out linux environment for EKS deployment, the following needs to be installed:
-- AWSCLI,
-- Docker,
-- Kubectl,
-- Terraform,
-- Helm.
-
+To setup the linux environment for EKS deployment, the above needs to be installed:
 1. Create a directory for setup files:
-`mkdir infrastructure/setup_environment`
+`mkdir -p infrastructure/setup_environment`
 2. Navigate to the setup_environment directory:
 `cd infrastructure/setup_environment`
 3. Create the setup script for awscli `nano awscli-setup.sh`
@@ -41,22 +33,8 @@ aws --version
 ```
 Change the permission mode for `awscli-setup.sh` file:
 `chmod 700 awscli-setup.sh`
-4. Create the setup script for docker `nano docker-setup.sh`
-```
-#!/bin/bash
-
-# Install docker
-sudo apt install docker.io -y
-
-# Add ubuntu user to the docker group
-sudo usermod -aG docker $USER
-
-#  Allow access to docker by other applications 
-sudo chmod 666 /var/run/docker.sock
-```
-Change the permission mode for `docker-setup.sh` file:
-`chmod 700 docker-setup.sh`
-5. Create the setup script for kubectl `nano kubectl-setup.sh`
+ker-setup.sh` file:
+4. Create the setup script for kubectl `nano kubectl-setup.sh`
 ```
 #!/bin/bash
 
@@ -77,7 +55,7 @@ kubectl version --client
 ```
 Change the permission mode for `kubectl-setup.sh` file:
 `chmod 700 kubectl-setup.sh`
-6. Create the setup script for terraform `nano terraform-setup.sh`
+5. Create the setup script for terraform `nano terraform-setup.sh`
 ```
 #!/bin/bash
 
@@ -99,7 +77,7 @@ terraform -version
 ```
 Change the permission mode for `terraform-setup.sh` file:
 `chmod 700 terraform-setup.sh`
-7. Create the setup script for helm `nano helm-setup.sh`:
+6. Create the setup script for helm `nano helm-setup.sh`:
 ```
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
 chmod 700 get_helm.sh
@@ -107,14 +85,14 @@ chmod 700 get_helm.sh
 ```
 Change the permission mode for `helm-setup.sh` file:
 `chmod 700 helm-setup.sh`
-8. Run the shell script to setup the 5 core tools:
+7. Run the shell script to setup the 5 core tools:
 ```
 ./awscl-setup.sh
-./docker-setup.sh
 ./helm-setup.sh
 ./kubectl-setup.sh
 ./terraform-setup.sh
 ```
-9. To use AWS locally, an IAM user was created in AWS with admin priviledges and configured in Linux environment. This can be done in two ways:
-- Running aws configure with the iam user. This is best used when working solely on an EC2 server.
-- Creating an IAM role, attaching it to a user and adding it as an instance profile. This is best practise when working with a shared server.
+8. To use AWS locally, an IAM user was created in AWS Management console with admin priviledges and configured in Linux environment. This configuration can be done in two ways:
+- Creating an IAM role, attaching it to a user and adding it as an instance profile. This is best practise when working with a shared server. This will be observed when we get to task 3.
+- Running `aws configure` with the iam user `access-id` and `secret-access-key`. This is best used when working solely on an EC2 server. Since this take is an individual kind, I will use this method here.
+
