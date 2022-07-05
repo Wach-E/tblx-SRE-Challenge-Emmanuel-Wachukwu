@@ -26,7 +26,7 @@ The application logs could be retrieved by a **logging agent** such as Filebeat 
 - Setup of virtual environment.
 - Application development
 
-**Documentation**: This task was documented according to the workflow. The documentation files can be found in [Task 1 - Documentation](https://github.com/tblxio/tblx-challenge-sre-Emmanuel-Wachukwu/tree/task-1/Task%201%20-%20Documentation).
+**Documentation**: This task was documented according to the workflow. The documentation files can be found in [Task 1 - Documentation](https://github.com/Wach-E/tblx-SRE-Challenge-Emmanuel-Wachukwu/tree/develop/Task%201%20-%20Documentation).
 
 **Git workflow**: The `github feature (task-*) workflow develop*` was implemented for this task. This task (task-1) was created from the **development** branch.
 
