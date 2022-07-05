@@ -1,8 +1,11 @@
-In part of the task, the focus was on deploying the kubernetes manifest file using a pipeline job.
+# Task 3 - Application Continuous Deployment
+
+In this part of the task, the focus is on deploying the kubernetes manifest file using a pipeline job.
 
 1. Kubectl requires a user to be able to make calls to the API server. For this, the `tblx-github-role` needs to be updated with the user. The user has to be there to provide short-lived tokens using AWS STS, so GitHub actions can assume that role. To satisfy this, the Trusted entity policy of the role must be edited to account for the user with `sts:TagSession` and `sts:AssumeRole` permissions. 
 On the AWS Management console:
     - In the Trusted relationship of the role, edit the Trusted entity policy by adding the following statement:
+    
     ```
             {
                 "Sid": "",
@@ -16,7 +19,9 @@ On the AWS Management console:
                 ]
             }
     ```
+
     - In the authentication user, add an inline IAM Policy as the JSON format:
+    
     ```
     {
         "Version": "2012-10-17",
@@ -36,7 +41,10 @@ On the AWS Management console:
     }
     ```
 
+N/B: The configuration done in the CI/CD task allowed `tblx-github-role` assume the role of the kubernetes creator user. Just in case the normal authentication technique does not work in the server, use: `aws eks update-kubeconfig --name tblx-challenge-sre --region us-west-1 --role-arn arn:aws:iam::</your-account-id>:role/tblx-github-role` as suggested [here](https://aws.amazon.com/premiumsupport/knowledge-center/eks-api-server-unauthorized-error/)
+
 2. Add a the step to apply the manifest files to the kubernetes cluster:
+
 ```
       - name: Apply new deployment manifest
         run: |
@@ -47,6 +55,7 @@ On the AWS Management console:
 ```
 
 Now, the complete pipeline should look like this:
+
 ```
 # CI/CD Pipeline for Task 3
 
@@ -54,7 +63,7 @@ name: Daimler-Truck WebApp CI/CD
 
 # Controls when the workflow will run.
 on:
-  # Triggers the workflow on push events only for the main branch.
+  # Triggers the workflow on push and pull_request events for the develop branch.
   push:
     branches: [develop]
   pull_request:
@@ -85,7 +94,7 @@ jobs:
           cd app
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      - name: Test with pytest
+      - name: Test python application with pytest
         run: |
           pytest
 
