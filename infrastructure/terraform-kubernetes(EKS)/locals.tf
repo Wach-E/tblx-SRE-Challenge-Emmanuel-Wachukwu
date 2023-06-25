@@ -10,7 +10,7 @@ locals {
 
   #   maps_users = [
   #     {
-  #       userarn  = "arn:aws:iam::$ACCOUNT_ID:user/babamame247@yahoo.com"
+  #       userarn  = "arn:aws:iam::$ACCOUNT_ID:user/$username"
   #       username = "$username"
   #       groups   = ["system:masters"]
   #     },
